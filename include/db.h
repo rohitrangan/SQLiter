@@ -8,6 +8,7 @@
 #ifndef INCLUDE_DB_H_
 #define INCLUDE_DB_H_
 
+#include "../include/wd.h"
 #include "../include/fileio.h"
 
 #include <dirent.h>
@@ -69,9 +70,12 @@ class Table
     string db_name;
     vector<string> field_names;
     vector<FieldType> field_types;
+    int curr_pos;
+    int seek_size;
 
     bool checkAttrFilePresent ();
     void writeTableToAttrFile ();
+    void setSeekSize ();
 
   public:
     Table ();
@@ -81,6 +85,7 @@ class Table
     string getDatabaseName ();
     vector<FieldType> getFieldTypes ();
     vector<string> getFieldNames ();
+    Row getNextRow ();
     static Row read (istream& in_t, Table t);
 };
 

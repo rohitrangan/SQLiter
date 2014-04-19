@@ -250,13 +250,56 @@ void Table::writeTableToAttrFile ()
         op << field_types[i] << endl;
 }
 
+void Table::setSeekSize ()
+{
+    if (seek_size != -1)
+        return;
+
+    ifstream in_t (name.c_str (), ios::in | ios::binary);
+    int tmp;
+    double tmp_d;
+    char tmp_c[MAX_CHAR_SIZE];
+    seek_size = 0;
+    for (int i = 0; i < field_types.size (); i++)
+    {
+        switch (field_types[i])
+        {
+            case INTEGER:
+              {
+                in_t.read ((char*)&tmp, sizeof (tmp));
+                Field fi (field_types[i], tmp);
+                seek_size += sizeof (fi.getIntFieldVal ());
+                break;
+              }
+            case DECIMAL:
+              {
+                in_t.read ((char*)&tmp_d, sizeof (tmp_d));
+                Field fd (field_types[i], tmp_d);
+                seek_size += sizeof (fd.getDoubleFieldVal ());
+                break;
+              }
+            case CHAR_ARR:
+              {
+                in_t.read (tmp_c, sizeof (tmp_c));
+                Field fc (field_types[i], tmp_c);
+                seek_size += sizeof (fc.getCharFieldVal ());
+                break;
+              }
+        }
+    }
+}
+
 Table::Table ()
 {
+    curr_pos = 0;
+    seek_size = -1;
 }
 
 Table::Table (string t_name, string dbname, vector<string>& f_names,
               vector<FieldType>& f_types) : name (t_name), db_name (dbname)
 {
+    curr_pos = 0;
+    seek_size = -1;
     field_names = f_names;
     field_types = f_types;
     if (!checkAttrFilePresent ())
@@ -281,6 +324,48 @@ vector<FieldType> Table::getFieldTypes ()
 vector<string> Table::getFieldNames ()
 {
     return field_names;
+}
+
+Row Table::getNextRow ()
+{
+    setSeekSize ();
+    ifstream in_t (name.c_str (), ios::in | ios::binary);
+    in_t.seekg (curr_pos);
+
+    Row r;
+    int tmp;
+    double tmp_d;
+    char tmp_c[MAX_CHAR_SIZE];
+    for (int i = 0; i < field_types.size (); i++)
+    {
+        switch (field_types[i])
+        {
+            case INTEGER:
+              {
+                in_t.read ((char*)&tmp, sizeof (tmp));
+                Field fi (field_types[i], tmp);
+                r.addField (fi, field_names[i]);
+                break;
+              }
+            case DECIMAL:
+              {
+                in_t.read ((char*)&tmp_d, sizeof (tmp_d));
+                Field fd (field_types[i], tmp_d);
+                r.addField (fd, field_names[i]);
+                break;
+              }
+            case CHAR_ARR:
+              {
+                in_t.read (tmp_c, sizeof (tmp_c));
+                Field fc (field_types[i], tmp_c);
+                r.addField (fc, field_names[i]);
+                break;
+              }
+        }
+    }
+    in_t.close ();
+    curr_pos += seek_size;
+    return r;
 }
 
 Row Table::read (istream& in_t, Table t)
