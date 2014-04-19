@@ -40,6 +40,11 @@ void write_t (ostream& out_t, T& t, int pos = 0);
 template <class T>
 void read_t (istream& in_t, T& t, int pos = 0);
 
+inline bool fileExists (string& name) {
+    struct stat buffer;
+    return (stat (name.c_str(), &buffer) == 0);
+}
+
 }
 
 #endif  /* INCLUDE_FILEIO_H_ */

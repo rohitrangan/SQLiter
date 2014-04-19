@@ -10,6 +10,8 @@
 
 #include "../include/fileio.h"
 
+#include <dirent.h>
+
 #include <string>
 #include <cstdio>
 #include <vector>
@@ -20,21 +22,9 @@
 
 using namespace std;
 
-class Database
-{
-  private:
-    string name;
-
-  public:
-    Database ();
-    Database (string db_name);
-    bool createDatabase ();
-    static bool useDatabase (string db_name);
-};
-
 enum FieldType
 {
-    INTEGER,
+    INTEGER = 0,
     DECIMAL,
     CHAR_ARR
 };
@@ -80,13 +70,35 @@ class Table
     vector<string> field_names;
     vector<FieldType> field_types;
 
+    bool checkAttrFilePresent ();
+    void writeTableToAttrFile ();
+
   public:
     Table ();
     Table (string t_name, string dbname, vector<string>& f_names,
            vector<FieldType>& f_types);
+    string getTableName ();
+    string getDatabaseName ();
     vector<FieldType> getFieldTypes ();
     vector<string> getFieldNames ();
     static Row read (istream& in_t, Table t);
+};
+
+class Database
+{
+  private:
+    string name;
+    vector<Table> tables;
+
+    bool loadTableFromAttrFile (string fname);
+
+  public:
+    Database ();
+    Database (string db_name);
+    bool createDatabase ();
+    bool loadTables ();
+    Table getTableFromName (string t_name);
+    static bool useDatabase (string db_name, Database db);
 };
 
 #endif  /* INCLUDE_DB_H_ */

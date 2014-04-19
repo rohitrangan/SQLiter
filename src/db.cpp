@@ -9,6 +9,47 @@
 
 /* Database class definitions.
  */
+bool Database::loadTableFromAttrFile (string fname)
+{
+    ifstream ip (fname.c_str (), ios::in);
+    if (!ip.is_open ())
+        return false;
+
+    string t_name, db_name;
+    string tmp;
+    int f_len;
+    int tmp_t;
+    vector<string> f_names;
+    vector<FieldType> f_types;
+    ip >> t_name;
+    ip >> db_name;
+    ip >> f_len;
+    for (int i = 0; i < f_len; i++)
+    {
+        ip >> tmp;
+        f_names.push_back (tmp);
+    }
+    for (int i = 0; i < f_len; i++)
+    {
+        ip >> tmp_t;
+        switch (tmp_t)
+        {
+            case INTEGER:
+                f_types.push_back (INTEGER);
+                break;
+            case DECIMAL:
+                f_types.push_back (DECIMAL);
+                break;
+            case CHAR_ARR:
+                f_types.push_back (CHAR_ARR);
+                break;
+        }
+    }
+    Table t (t_name, db_name, f_names, f_types);
+    tables.push_back (t);
+    return true;
+}
+
 Database::Database ()
 {
     name = "";
@@ -23,9 +64,49 @@ bool Database::createDatabase ()
     return fileio::mkdir (name);
 }
 
-bool Database::useDatabase (string db_name)
+bool Database::loadTables ()
 {
-    return fileio::chdir (db_name);
+    DIR* dir;
+    struct dirent* ent;
+    if ((dir = opendir (".")) != NULL)
+    {
+        while ((ent = readdir (dir)) != NULL)
+        {
+            string fname (ent->d_name);
+            cout << fname << "\n";
+            size_t place = fname.find (".");
+            if (fname.substr (place, string::npos) == ".attr")
+            {
+                bool rval = loadTableFromAttrFile (fname);
+                if (!rval)
+                    return rval;
+            }
+        }
+        closedir (dir);
+    }
+    else
+        return false;
+
+    return true;
+}
+
+Table Database::getTableFromName (string t_name)
+{
+    for (int i = 0; i < tables.size (); i++)
+    {
+        if (tables[i].getTableName () == t_name)
+            return tables[i];
+    }
+    return Table ();
+}
+
+bool Database::useDatabase (string db_name, Database db)
+{
+    bool rval = fileio::chdir (db_name);
+    if (!rval)
+        return rval;
+
+    return db.loadTables ();
 }
 
 /* Row class definitions.
@@ -150,6 +231,25 @@ char* Field::getCharFieldVal ()
 
 /* Table class definitions.
  */
+bool Table::checkAttrFilePresent ()
+{
+    string attr_name = name + ".attr";
+    return fileio::fileExists (attr_name);
+}
+
+void Table::writeTableToAttrFile ()
+{
+    string attr_name = name + ".attr";
+    ofstream op (attr_name.c_str (), ios::out);
+    op << name << endl;
+    op << db_name << endl;
+    op << field_names.size () << endl;
+    for (int i = 0; i < field_names.size (); i++)
+        op << field_names[i] << endl;
+    for (int i = 0; i < field_types.size (); i++)
+        op << field_types[i] << endl;
+}
+
 Table::Table ()
 {
 }
@@ -159,6 +259,18 @@ Table::Table (string t_name, string dbname, vector<string>& f_names,
 {
     field_names = f_names;
     field_types = f_types;
+    if (!checkAttrFilePresent ())
+        writeTableToAttrFile ();
+}
+
+string Table::getTableName ()
+{
+    return name;
+}
+
+string Table::getDatabaseName ()
+{
+    return db_name;
 }
 
 vector<FieldType> Table::getFieldTypes ()
