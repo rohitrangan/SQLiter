@@ -28,3 +28,4 @@ Icon
 
 # The dependency file created by the compiler.
 .depend
+sqliter

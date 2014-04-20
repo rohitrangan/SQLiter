@@ -10,7 +10,7 @@ CXXOBJS=$(CXXSRCS:.cpp=.o)
 LIBS=
 INCLUDES=-I./include
 TARGET=sqliter
-#DEBUGFLAGS=-g -ggdb -O0 -fno-inline
+DEBUGFLAGS=-g -ggdb -O0 -fno-inline
 
 # Required for the target clean.
 RM=rm -rf

@@ -61,6 +61,10 @@ Database::Database (string db_name) : name (db_name)
 
 bool Database::createDatabase ()
 {
+    bool rval = fileio::chdir (MASTER_WD);
+    if (!rval)
+        return rval;
+
     return fileio::mkdir (name);
 }
 
@@ -73,8 +77,10 @@ bool Database::loadTables ()
         while ((ent = readdir (dir)) != NULL)
         {
             string fname (ent->d_name);
-            cout << fname << "\n";
+            //cout << fname << "\n";
             size_t place = fname.find (".");
+            if (place == string::npos)
+                continue;
             if (fname.substr (place, string::npos) == ".attr")
             {
                 bool rval = loadTableFromAttrFile (fname);
@@ -100,13 +106,41 @@ Table Database::getTableFromName (string t_name)
     return Table ();
 }
 
-bool Database::useDatabase (string db_name, Database db)
+string Database::getDatabaseName ()
 {
-    bool rval = fileio::chdir (db_name);
+    return name;
+}
+
+void Database::addTable (Table t)
+{
+    Table tmp = getTableFromName (t.getTableName ());
+    if (tmp.isGood ())
+        return;
+
+    tables.push_back (t);
+}
+
+bool Database::useDatabase (Database db)
+{
+    string db_name = db.getDatabaseName ();
+    bool rval = fileio::chdir (MASTER_WD);
+    if (!rval)
+        return rval;
+
+    rval = fileio::chdir (db_name);
     if (!rval)
         return rval;
 
     return db.loadTables ();
+}
+
+bool Database::deleteDatabase (Database db)
+{
+    bool rval = fileio::chdir (MASTER_WD);
+    if (!rval)
+        return false;
+
+    return fileio::rmdir (db.getDatabaseName ());
 }
 
 /* Row class definitions.
@@ -147,10 +181,16 @@ void Row::write (ostream& out_t)
                 break;
             case CHAR_ARR:
                 tmp_c = field_val[i].getCharFieldVal ();
-                out_t.write (tmp_c, sizeof (tmp_c));
+                //out_t.write (tmp_c, sizeof (tmp_c));
+                out_t.write (tmp_c, MAX_CHAR_SIZE);
                 break;
         }
     }
+}
+
+bool Row::isGood ()
+{
+    return (field_val.size () != 0);
 }
 
 ostream& operator<< (ostream& out_t, Row& r)
@@ -203,7 +243,7 @@ Field::Field (FieldType f, double field_val)
     field_double = field_val;
 }
 
-Field::Field (FieldType f, char field_val[MAX_CHAR_SIZE])
+Field::Field (FieldType f, const char* field_val)
 {
     ft = f;
     strcpy (field_char, field_val);
@@ -282,17 +322,30 @@ void Table::setSeekSize ()
               {
                 in_t.read (tmp_c, sizeof (tmp_c));
                 Field fc (field_types[i], tmp_c);
-                seek_size += sizeof (fc.getCharFieldVal ());
+                seek_size += MAX_CHAR_SIZE;
+                //seek_size += sizeof (fc.getCharFieldVal ());
                 break;
               }
         }
     }
+    in_t.close ();
+}
+
+void Table::setFileSize ()
+{
+    if (file_size != -1)
+        return;
+
+    ifstream ip (name.c_str (), ios::in | ios::binary | ios::ate);
+    file_size = (int) ip.tellg ();
+    ip.close ();
 }
 
 Table::Table ()
 {
     curr_pos = 0;
     seek_size = -1;
+    file_size = -1;
 }
 
 Table::Table (string t_name, string dbname, vector<string>& f_names,
@@ -300,6 +353,7 @@ Table::Table (string t_name, string dbname, vector<string>& f_names,
 {
     curr_pos = 0;
     seek_size = -1;
+    file_size = -1;
     field_names = f_names;
     field_types = f_types;
     if (!checkAttrFilePresent ())
@@ -329,6 +383,13 @@ vector<string> Table::getFieldNames ()
 Row Table::getNextRow ()
 {
     setSeekSize ();
+    setFileSize ();
+    if (curr_pos >= file_size)
+    {
+        curr_pos = 0;
+        Row r;
+        return r;
+    }
     ifstream in_t (name.c_str (), ios::in | ios::binary);
     in_t.seekg (curr_pos);
 
@@ -356,7 +417,8 @@ Row Table::getNextRow ()
               }
             case CHAR_ARR:
               {
-                in_t.read (tmp_c, sizeof (tmp_c));
+                //in_t.read (tmp_c, sizeof (tmp_c));
+                in_t.read (tmp_c, MAX_CHAR_SIZE);
                 Field fc (field_types[i], tmp_c);
                 r.addField (fc, field_names[i]);
                 break;
@@ -366,6 +428,11 @@ Row Table::getNextRow ()
     in_t.close ();
     curr_pos += seek_size;
     return r;
+}
+
+bool Table::isGood ()
+{
+    return (field_names.size () != 0);
 }
 
 Row Table::read (istream& in_t, Table t)
@@ -396,7 +463,8 @@ Row Table::read (istream& in_t, Table t)
               }
             case CHAR_ARR:
               {
-                in_t.read (tmp_c, sizeof (tmp_c));
+                //in_t.read (tmp_c, sizeof (tmp_c));
+                in_t.read (tmp_c, MAX_CHAR_SIZE);
                 Field fc (field_types[i], tmp_c);
                 r.addField (fc, field_names[i]);
                 break;
@@ -404,4 +472,13 @@ Row Table::read (istream& in_t, Table t)
         }
     }
     return r;
+}
+
+bool Table::deleteTable (string table_name)
+{
+    bool rval = fileio::rmfile (table_name);
+    if (!rval)
+        return rval;
+
+    return fileio::rmfile (table_name + ".attr");
 }

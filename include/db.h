@@ -42,7 +42,7 @@ class Field
     Field ();
     Field (FieldType f, int field_val);
     Field (FieldType f, double field_val);
-    Field (FieldType f, char field_val[MAX_CHAR_SIZE]);
+    Field (FieldType f, const char* field_val);
     FieldType getFieldType ();
     int getIntFieldVal ();
     double getDoubleFieldVal ();
@@ -60,6 +60,7 @@ class Row
     vector<Field> getFieldValues ();
     void addField (Field f, string f_name);
     void write (ostream& out_t);
+    bool isGood ();
     friend ostream& operator<< (ostream& out_t, Row& r);
 };
 
@@ -72,10 +73,12 @@ class Table
     vector<FieldType> field_types;
     int curr_pos;
     int seek_size;
+    int file_size;
 
     bool checkAttrFilePresent ();
     void writeTableToAttrFile ();
     void setSeekSize ();
+    void setFileSize ();
 
   public:
     Table ();
@@ -86,7 +89,9 @@ class Table
     vector<FieldType> getFieldTypes ();
     vector<string> getFieldNames ();
     Row getNextRow ();
+    bool isGood ();
     static Row read (istream& in_t, Table t);
+    static bool deleteTable (string table_name);
 };
 
 class Database
@@ -103,7 +108,10 @@ class Database
     bool createDatabase ();
     bool loadTables ();
     Table getTableFromName (string t_name);
-    static bool useDatabase (string db_name, Database db);
+    string getDatabaseName ();
+    void addTable (Table t);
+    static bool useDatabase (Database db);
+    static bool deleteDatabase (Database db);
 };
 
 #endif  /* INCLUDE_DB_H_ */

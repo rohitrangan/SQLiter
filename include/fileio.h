@@ -30,6 +30,8 @@ bool mkdir (string dir_name);
 
 bool rmdir (string dir_name);
 
+bool rmfile (string path);
+
 bool chdir (string path);
 
 string getwd ();

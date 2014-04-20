@@ -44,6 +44,11 @@ bool rmdir (string dir_name)
     return (rval == 0)?true:false;
 }
 
+bool rmfile (string path)
+{
+    return (remove (path.c_str ()) == 0);
+}
+
 bool chdir (string path)
 {
     int rval = ::chdir (path.c_str ());
