@@ -37,7 +37,7 @@ int main ()
 
     Table t (table, db.getDatabaseName (), fields, ftype);
     db.addTable (t);
-    Field fi (INTEGER, 10);
+    Field fi (INTEGER, 13);
     Field fd (DECIMAL, 2.9);
     Field fc (CHAR_ARR, "FINALLY!! YAYAYAYAYAYAYAYAYAYAYAYA");
     Row r;
@@ -54,7 +54,14 @@ int main ()
         cout << r1 << endl;
         r1 = t.getNextRow ();
     }
-    Table::deleteTable (table);
+    vector<Row> tmp_row = Database::selectFromTable (db, "First",
+                                                     "Integer", "<=", "12");
+    cout << "Select Query Results!!\n\n";
+    for (int i = 0 ; i < tmp_row.size () ; i++)
+    {
+        cout << tmp_row[i] << endl;
+    }
+    //Table::deleteTable (table);
     /*string table = "tmp";
     string db = "tmp_db";
     vector<string> fields;

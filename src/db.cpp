@@ -143,6 +143,243 @@ bool Database::deleteDatabase (Database db)
     return fileio::rmdir (db.getDatabaseName ());
 }
 
+void Database::showTables (Database db)
+{
+    string db_name = db.getDatabaseName ();
+    string cwdir = fileio::getwd ();
+    fileio::chdir (MASTER_WD);
+    fileio::chdir (db_name);
+    DIR* dir;
+    struct dirent* ent;
+    if ((dir = opendir (".")) != NULL)
+    {
+        while ((ent = readdir (dir)) != NULL)
+        {
+            if (ent->d_type != DT_REG)
+                continue;
+            string fname (ent->d_name);
+            size_t place = fname.find (".");
+            if (place != string::npos)
+                continue;
+            if (fname.substr (place, string::npos) == ".attr")
+                continue;
+            cout << fname << endl;
+        }
+        closedir (dir);
+        fileio::chdir (cwdir);
+    }
+    else
+    {
+        fileio::chdir (cwdir);
+        return;
+    }
+}
+
+void Database::showDatabases ()
+{
+    string cwdir = fileio::getwd ();
+    fileio::chdir (MASTER_WD);
+    DIR* dir;
+    struct dirent* ent;
+    if ((dir = opendir (".")) != NULL)
+    {
+        while ((ent = readdir (dir)) != NULL)
+        {
+            if (ent->d_type != DT_DIR)
+                continue;
+            string fname (ent->d_name);
+            size_t place = fname.find (".");
+            if (place != string::npos)
+                continue;
+            cout << fname << endl;
+        }
+        closedir (dir);
+        fileio::chdir (cwdir);
+    }
+    else
+    {
+        fileio::chdir (cwdir);
+        return;
+    }
+}
+
+vector<Row> Database::selectFromTable (Database db, char* table_name,
+                                       char* col_name, char* oper, char* val)
+{
+    Table t = db.getTableFromName (string (table_name));
+    vector<Row> select_reply;
+    Row r1 = t.getNextRow ();
+    string oper_s (oper);
+    while (r1.isGood ())
+    {
+        Field f = r1.getFieldByName (string (col_name));
+        if (oper_s == "<")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () < tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () < tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c < string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "<=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () <= tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () <= tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c <= string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "==")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () == tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () == tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c == string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () > tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () > tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c > string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () >= tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () >= tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c >= string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "!=" || oper_s == "<>")
+        {
+            switch (f.getFieldType ())
+            {
+                case INTEGER:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () != tmp_val)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case DECIMAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () != tmp_d)
+                        select_reply.push_back (r1);
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c != string (f.getCharFieldVal ()))
+                        select_reply.push_back (r1);
+                    break;
+                  }
+            }
+        }
+        r1 = t.getNextRow ();
+    }
+    return select_reply;
+}
+
 /* Row class definitions.
  */
 Row::Row ()
@@ -152,6 +389,16 @@ Row::Row ()
 vector<Field> Row::getFieldValues ()
 {
     return field_val;
+}
+
+Field Row::getFieldByName (string f_name)
+{
+    for (int i = 0; i < field_names.size (); i++)
+    {
+        if (field_names[i] == f_name)
+            return field_val[i];
+    }
+    return Field ();
 }
 
 void Row::addField (Field f, string f_name)

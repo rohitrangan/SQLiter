@@ -16,6 +16,7 @@
 #include <string>
 #include <cstdio>
 #include <vector>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 
@@ -58,6 +59,7 @@ class Row
   public:
     Row ();
     vector<Field> getFieldValues ();
+    Field getFieldByName (string f_name);
     void addField (Field f, string f_name);
     void write (ostream& out_t);
     bool isGood ();
@@ -112,6 +114,10 @@ class Database
     void addTable (Table t);
     static bool useDatabase (Database db);
     static bool deleteDatabase (Database db);
+    static void showTables (Database db);
+    static void showDatabases ();
+    static vector<Row> selectFromTable (Database db, char* table_name,
+                                        char* col_name, char* oper, char* val);
 };
 
 #endif  /* INCLUDE_DB_H_ */
