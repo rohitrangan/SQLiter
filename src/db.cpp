@@ -34,11 +34,11 @@ bool Database::loadTableFromAttrFile (string fname)
         ip >> tmp_t;
         switch (tmp_t)
         {
-            case INTEGER:
-                f_types.push_back (INTEGER);
+            case INT_VAL:
+                f_types.push_back (INT_VAL);
                 break;
-            case DECIMAL:
-                f_types.push_back (DECIMAL);
+            case DOUBLE_VAL:
+                f_types.push_back (DOUBLE_VAL);
                 break;
             case CHAR_ARR:
                 f_types.push_back (CHAR_ARR);
@@ -217,14 +217,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () < tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () < tmp_d)
@@ -244,14 +244,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () <= tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () <= tmp_d)
@@ -271,14 +271,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () == tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () == tmp_d)
@@ -298,14 +298,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () > tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () > tmp_d)
@@ -325,14 +325,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () >= tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () >= tmp_d)
@@ -352,14 +352,14 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
         {
             switch (f.getFieldType ())
             {
-                case INTEGER:
+                case INT_VAL:
                   {
                     int tmp_val = atoi (val);
                     if (f.getIntFieldVal () != tmp_val)
                         select_reply.push_back (r1);
                     break;
                   }
-                case DECIMAL:
+                case DOUBLE_VAL:
                   {
                     double tmp_d = atof (val);
                     if (f.getDoubleFieldVal () != tmp_d)
@@ -416,12 +416,12 @@ void Row::write (ostream& out_t)
     {
         switch (field_val[i].getFieldType ())
         {
-            case INTEGER:
+            case INT_VAL:
                 tmp = field_val[i].getIntFieldVal ();
                 out_t.write (reinterpret_cast<const char *>(&tmp),
                              sizeof (tmp));
                 break;
-            case DECIMAL:
+            case DOUBLE_VAL:
                 tmp_d = field_val[i].getDoubleFieldVal ();
                 out_t.write (reinterpret_cast<const char *>(&tmp_d),
                              sizeof (tmp_d));
@@ -450,11 +450,11 @@ ostream& operator<< (ostream& out_t, Row& r)
     {
         switch (field_val[i].getFieldType ())
         {
-            case INTEGER:
+            case INT_VAL:
                 tmp = field_val[i].getIntFieldVal ();
                 out_t << tmp << "\t";
                 break;
-            case DECIMAL:
+            case DOUBLE_VAL:
                 tmp_d = field_val[i].getDoubleFieldVal ();
                 out_t << tmp_d << "\t";
                 break;
@@ -472,7 +472,7 @@ ostream& operator<< (ostream& out_t, Row& r)
  */
 Field::Field ()
 {
-    ft = INTEGER;
+    ft = INT_VAL;
     field_int = 0;
     field_double = 0.0;
     field_char[0] = '\0';
@@ -551,14 +551,14 @@ void Table::setSeekSize ()
     {
         switch (field_types[i])
         {
-            case INTEGER:
+            case INT_VAL:
               {
                 in_t.read ((char*)&tmp, sizeof (tmp));
                 Field fi (field_types[i], tmp);
                 seek_size += sizeof (fi.getIntFieldVal ());
                 break;
               }
-            case DECIMAL:
+            case DOUBLE_VAL:
               {
                 in_t.read ((char*)&tmp_d, sizeof (tmp_d));
                 Field fd (field_types[i], tmp_d);
@@ -648,14 +648,14 @@ Row Table::getNextRow ()
     {
         switch (field_types[i])
         {
-            case INTEGER:
+            case INT_VAL:
               {
                 in_t.read ((char*)&tmp, sizeof (tmp));
                 Field fi (field_types[i], tmp);
                 r.addField (fi, field_names[i]);
                 break;
               }
-            case DECIMAL:
+            case DOUBLE_VAL:
               {
                 in_t.read ((char*)&tmp_d, sizeof (tmp_d));
                 Field fd (field_types[i], tmp_d);
@@ -694,14 +694,14 @@ Row Table::read (istream& in_t, Table t)
     {
         switch (field_types[i])
         {
-            case INTEGER:
+            case INT_VAL:
               {
                 in_t.read ((char*)&tmp, sizeof (tmp));
                 Field fi (field_types[i], tmp);
                 r.addField (fi, field_names[i]);
                 break;
               }
-            case DECIMAL:
+            case DOUBLE_VAL:
               {
                 in_t.read ((char*)&tmp_d, sizeof (tmp_d));
                 Field fd (field_types[i], tmp_d);

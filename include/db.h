@@ -26,8 +26,8 @@ using namespace std;
 
 enum FieldType
 {
-    INTEGER = 0,
-    DECIMAL,
+    INT_VAL = 0,
+    DOUBLE_VAL,
     CHAR_ARR
 };
 

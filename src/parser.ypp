@@ -1,0 +1,99 @@
+%{
+#include "../include/wd.h"
+#include "../include/db.h"
+#include "../include/fileio.h"
+
+#include <map>
+#include <string>
+#include <cstdlib>  //-- I need this for atoi
+#include <iostream>
+
+using namespace std;
+
+string MASTER_WD;
+
+Database main_db;
+
+//-- Lexer prototype required by bison, aka getNextToken()
+int yylex(); 
+int yyerror(const char *p) { cerr << p<<" Error!" << endl; }
+%}
+
+//-- SYMBOL SEMANTIC VALUES -----------------------------
+%union {
+  int int_val;
+  double fl_val; 
+  char* a_val;
+  char sym;
+};
+%token <int_val> NUM 
+%token <fl_val> DOUBLE FLOAT
+%token <a_val> NAME COMPARISION INTEGER CHARACTER DECIMAL
+%token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET 
+%type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types
+
+//-- GRAMMAR RULES ---------------------------------------
+%%
+   /* forces bison to process many stmts */
+run: res run | res
+
+res: exp STOP      
+
+exp: USE NAME 					{ main_db = Database (string ($2));
+                                  Database::useDatabase (main_db);
+                                  cout << "Database Changed.\n";
+                                  //cout << $2 << endl;
+                                }
+| CREATE DATABASE NAME 			{ main_db = Database (string ($3)); 
+                                  main_db.createDatabase ();
+                                  cout << "Database Created.\n";
+                                  //cout << $3 << endl;
+                                }
+| SHOW TABLES					{ cout << "show is called "<<endl;}
+| SHOW DATABASES				{ cout << "show is called "<<endl;}
+| sel_query1
+| sel_query2
+| DROP DATABASE NAME            {cout<< $3 <<endl;}
+| DROP TABLE NAME				{cout<< $3 <<endl;}
+| create_query
+| insertion
+| upd_query1
+| upd_query2
+| deletion
+
+sel_query1: SELECT STAR FROM NAME 	{cout<< $4 << endl;}
+
+sel_query2: SELECT STAR FROM NAME WHERE NAME COMPARISION diff_types  {cout<< $4 << endl ;}
+
+create_query: CREATE TABLE NAME LP var RP {cout<< $3 <<endl;}
+
+var: var COMMA var 
+| NAME INTEGER    {cout<< $2 <<endl;}
+| NAME CHARACTER  {cout<< $2 <<endl;}
+| NAME DECIMAL    {cout<< $2 <<endl;}
+
+insertion: INSERT INTO NAME VALUES LP val RP {cout<< $3 <<endl;}
+
+val: val COMMA val
+| NUM  			{cout<< $1 <<endl;}
+| DOUBLE		{cout<< $1 <<endl;}
+| NAME  		{cout<< $1 <<endl;}
+
+upd_query1: UPDATE NAME SET NAME COMPARISION diff_types {cout<< $4 <<endl;}
+
+upd_query2: UPDATE NAME SET NAME COMPARISION diff_types WHERE NAME COMPARISION diff_types {cout<< $4 <<"\n"<<$7<<endl;}
+
+deletion: DELETE FROM NAME WHERE NAME COMPARISION diff_types {cout<< $3 <<endl;}
+
+diff_types: NUM {cout<< $1 <<endl;}
+| DOUBLE {cout<< $1 <<endl;}
+| NAME {cout<< $1 <<endl;}
+
+%%
+//-- FUNCTION DEFINITIONS ---------------------------------
+int main()
+{
+    MASTER_WD = fileio::getwd ();
+    yyparse ();
+    return 0;
+}

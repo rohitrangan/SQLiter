@@ -31,14 +31,14 @@ int main ()
     fields.push_back ("Double");
     fields.push_back ("String");
     vector<FieldType> ftype;
-    ftype.push_back (INTEGER);
-    ftype.push_back (DECIMAL);
+    ftype.push_back (INT_VAL);
+    ftype.push_back (DOUBLE_VAL);
     ftype.push_back (CHAR_ARR);
 
     Table t (table, db.getDatabaseName (), fields, ftype);
     db.addTable (t);
-    Field fi (INTEGER, 13);
-    Field fd (DECIMAL, 2.9);
+    Field fi (INT_VAL, 13);
+    Field fd (DOUBLE_VAL, 2.9);
     Field fc (CHAR_ARR, "FINALLY!! YAYAYAYAYAYAYAYAYAYAYAYA");
     Row r;
     r.addField (fi, fields[0]);
@@ -69,13 +69,13 @@ int main ()
     fields.push_back ("Double");
     fields.push_back ("String");
     vector<FieldType> ftype;
-    ftype.push_back (INTEGER);
-    ftype.push_back (DECIMAL);
+    ftype.push_back (INT_VAL);
+    ftype.push_back (DOUBLE_VAL);
     ftype.push_back (CHAR_ARR);
 
     Table t (table, db, fields, ftype);
-    Field fi (INTEGER, 10);
-    Field fd (DECIMAL, 2.9);
+    Field fi (INT_VAL, 10);
+    Field fd (DOUBLE_VAL, 2.9);
     Field fc (CHAR_ARR, "Come on");
     Row r;
     r.addField (fi, fields[0]);
