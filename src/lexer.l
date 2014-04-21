@@ -26,6 +26,7 @@ values [v|V][a|A][l|L][u|U][e|E][s|S]
 update [u|U][p|P][d|D][a|A][t|T][e|E]
 set [s|S][e|E][t|T]
 delete [d|D][e|E][l|L][e|E][t|T][e|E]
+quit [q|Q][u|U][i|I][t|T]
 %%
 
 {sel}							 {return SELECT;}
@@ -48,6 +49,7 @@ delete [d|D][e|E][l|L][e|E][t|T][e|E]
 {update}						 {return UPDATE;}
 {set}							 {return SET;}
 {delete}                         {return DELETE;}
+{quit}                           {return QUIT;}
 [0-9]+  						 { yylval.int_val = atoi(yytext); return NUM;}
 {integer}						 {yylval.a_val=yytext;return INTEGER;}
 {decimal}                        {yylval.a_val=yytext;return DECIMAL;}
