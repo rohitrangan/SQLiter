@@ -48,6 +48,9 @@ class Field
     int getIntFieldVal ();
     double getDoubleFieldVal ();
     char* getCharFieldVal ();
+    void setIntFieldVal (int field_val);
+    void setDoubleFieldVal (double field_val);
+    void setCharFieldVal (char* field_val);
 };
 
 class Row
@@ -86,11 +89,14 @@ class Table
     Table ();
     Table (string t_name, string dbname, vector<string>& f_names,
            vector<FieldType>& f_types);
+    ~Table ();
     string getTableName ();
     string getDatabaseName ();
     vector<FieldType> getFieldTypes ();
     vector<string> getFieldNames ();
     Row getNextRow ();
+    int getCurrentPosition ();
+    int getSeekSize ();
     bool isGood ();
     static Row read (istream& in_t, Table t);
     static bool deleteTable (string table_name);
@@ -109,15 +115,24 @@ class Database
     Database (string db_name);
     bool createDatabase ();
     bool loadTables ();
+    bool isDatabase (string fname);
     Table getTableFromName (string t_name);
+    vector<Table> getAllTables ();
     string getDatabaseName ();
     void addTable (Table t);
-    static bool useDatabase (Database db);
-    static bool deleteDatabase (Database db);
-    static void showTables (Database db);
-    static void showDatabases ();
-    static vector<Row> selectFromTable (Database db, char* table_name,
-                                        char* col_name, char* oper, char* val);
+    bool tableExists (string table_name);
+    static bool useDatabase (Database& db);
+    static bool deleteDatabase (Database& db);
+    static void showTables (Database& db);
+    static void showDatabases (Database& db);
+    static vector<Row> selectFromTable (Database& db, char* table_name,
+                                        char* col_name, const char* oper,
+                                        const char* val);
+    static void printSelectResult (Database& db, char* table_name,
+                                   vector<Row> res);
+    static void updateTable (Database& db, char* table_name, char* col_name1,
+                             char* val1, char* col_name2, char* oper,
+                             char* val2);
 };
 
 #endif  /* INCLUDE_DB_H_ */

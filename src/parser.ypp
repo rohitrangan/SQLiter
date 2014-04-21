@@ -5,9 +5,11 @@
 
 #include <map>
 #include <string>
+#include <cctype>
 #include <cstdlib>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 #include <stdio.h>
 #include <string.h>
@@ -36,7 +38,7 @@ int yyerror(const char *p) { cerr << p<<" Error!" << endl; }
 %token <fl_val> DOUBLE FLOAT
 %token <a_val> NAME COMPARISION INTEGER CHARACTER DECIMAL
 %token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET QUIT
-%type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types
+%type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types upd_query1 upd_query2 deletion1 deletion2 comp
 
 //-- GRAMMAR RULES ---------------------------------------
 %%
@@ -45,64 +47,114 @@ run: res
 
 | QUIT { exit (0); }
 
-res: exp STOP { return 0; }    
+res: exp { return 0; }    
 
-exp: USE NAME 					{
-                                    main_db = Database (string ($2));
-                                    Database::useDatabase (main_db);
-                                    cout << "Database Changed.\n";
-                                    //cout << $2 << endl;
+exp: USE NAME STOP              {
+                                    char* tmp_name = strtok ($2, " ");
+                                    tmp_name = strtok (tmp_name, "\n");
+                                    tmp_name = strtok (tmp_name, ";");
+                                    main_db = Database (string (tmp_name));
+                                    if (Database::useDatabase (main_db))
+                                        cout << "Database Changed.\n";
+                                    else
+                                        cout << "ERROR! Database Doesn't Exist.\n";
                                 }
-| CREATE DATABASE NAME 			{ 
-                                    main_db = Database (string ($3)); 
-                                    main_db.createDatabase ();
-                                    cout << "Database Created.\n";
-                                    //cout << $3 << endl;
+| CREATE DATABASE NAME STOP     {
+                                    char* tmp_name = strtok ($3, " ");
+                                    tmp_name = strtok (tmp_name, "\n");
+                                    tmp_name = strtok (tmp_name, ";");
+                                    main_db = Database (string (tmp_name));
+                                    if (main_db.createDatabase ())
+                                        cout << "Database Created.\n";
+                                    else
+                                        cout << "ERROR! Database Exists.\n";
                                 }
-| SHOW TABLES					{ 
-                                    cout << "show is called "<<endl;
+| SHOW TABLES STOP              { 
+                                    Database::showTables (main_db);
                                 }
-| SHOW DATABASES				{ 
-                                    cout << "show is called "<<endl;
+| SHOW DATABASES STOP           { 
+                                    Database::showDatabases (main_db);
                                 }
 | sel_query1
 | sel_query2
-| DROP DATABASE NAME            {
-                                    main_db = Database (string ($3));
+| DROP DATABASE NAME STOP       {
+                                    char* tmp_name = strtok ($3, " ");
+                                    tmp_name = strtok (tmp_name, "\n");
+                                    tmp_name = strtok (tmp_name, ";");
+                                    main_db = Database (string (tmp_name));
                                     Database::deleteDatabase (main_db);
                                     cout << "Database Deleted.\n";
-                                    //cout << $3 <<endl;
                                 }
-| DROP TABLE NAME				{
-                                    Table::deleteTable ($3);
+| DROP TABLE NAME STOP          {
+                                    char* tmp_name = strtok ($3, " ");
+                                    tmp_name = strtok (tmp_name, "\n");
+                                    tmp_name = strtok (tmp_name, ";");
+                                    Table::deleteTable (string (tmp_name));
                                     cout << "Table Deleted.\n";
-                                    //cout << $3 <<endl;
                                 }
 | create_query
 | insertion
 | upd_query1
 | upd_query2
-| deletion
+| deletion1
+| deletion2
 
-sel_query1: SELECT STAR FROM NAME 	{
-                                        string tb_name (strtok ($4, ";"));
-                                        cout << tb_name << endl;
-                                        Table t = main_db.getTableFromName (tb_name);
-                                        cout << "Query Result \n\n";
-                                        Row r1 = t.getNextRow ();
-                                        while (r1.isGood ())
+sel_query1: SELECT STAR FROM NAME STOP 
+                                    {
+                                        char* tmp_name = strtok ($4, " ");
+                                        tmp_name = strtok (tmp_name, "\n");
+                                        tmp_name = strtok (tmp_name, ";");
+                                        if (main_db.tableExists (string (tmp_name)))
                                         {
-                                            cout << r1 << endl;
-                                            r1 = t.getNextRow ();
+                                            vector<Row> res = Database::selectFromTable (main_db, tmp_name, NULL, NULL, NULL);
+                                            Database::printSelectResult (main_db, tmp_name, res);
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Does Not Exist.\n";
                                         }
                                     }
 
-sel_query2: SELECT STAR FROM NAME WHERE NAME COMPARISION diff_types  
+sel_query2: SELECT STAR FROM NAME WHERE NAME comp diff_types STOP
                                     {
-                                        cout<< $4 << endl;
+                                        char* tb_name = strtok ($4, " ");
+                                        cout << "Someval = " << tmp[0] << endl;
+                                        char* col_name = strtok ($6, tmp[0].c_str ());
+                                        col_name = strtok (col_name, " ");
+                                        if (main_db.tableExists (string (tb_name)))
+                                        {
+                                            vector<Row> res = Database::selectFromTable (main_db, tb_name, col_name, tmp[0].c_str (), tmp[1].c_str ());
+                                            Database::printSelectResult (main_db, tb_name, res);
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Does Not Exist.\n";
+                                        }
+                                        tmp.clear ();
                                     }
 
-create_query: CREATE TABLE NAME LP var RP 
+| SELECT STAR FROM NAME WHERE LP NAME comp diff_types RP STOP
+                                    {
+                                        char* tb_name = strtok ($4, " ");
+                                        char* col_name = strtok ($7, tmp[0].c_str ());
+                                        col_name = strtok (col_name, " ");
+                                        if (main_db.tableExists (string (tb_name)))
+                                        {
+                                            vector<Row> res = Database::selectFromTable (main_db, tb_name, col_name, tmp[0].c_str (), tmp[1].c_str ());
+                                            Database::printSelectResult (main_db, tb_name, res);
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Does Not Exist.\n";
+                                        }
+                                        tmp.clear ();
+                                    }
+
+comp: COMPARISION   {
+                        tmp.push_back (string ($1));
+                    }
+
+create_query: CREATE TABLE NAME LP var RP STOP
                                     {
                                         char* tmp1 = strtok ($3, "(");
                                         string tb_name = string (strtok (tmp1, " "));
@@ -135,89 +187,129 @@ var: var COMMA var
                     char* p1 = strtok ($1, " ");
                     char* p2 = strtok (NULL, " ");
                     tmp.push_back (string (p1));
-                    tmp.push_back (string (p2));
+                    string s (p2);
+                    std::transform (s.begin(), s.end(), s.begin(), ::toupper);
+                    tmp.push_back (s);
                   }
 | NAME CHARACTER  {
                     char* p3 = strtok ($1, " ");
                     char* p4 = strtok (NULL, " ");
                     tmp.push_back (string (p3));
-                    tmp.push_back (string (p4));
+                    string s1 (p4);
+                    std::transform (s1.begin(), s1.end(), s1.begin(), ::toupper);
+                    tmp.push_back (s1);
                   }
 | NAME DECIMAL    {
                     char* p5 = strtok ($1, " ");
                     char* p6 = strtok (NULL, " ");
                     tmp.push_back (string (p5));
-                    tmp.push_back (string (p6));
+                    string s2 (p6);
+                    std::transform (s2.begin(), s2.end(), s2.begin(), ::toupper);
+                    tmp.push_back (s2);
                   }
 
-insertion: INSERT INTO NAME VALUES LP val RP 
+insertion: INSERT INTO NAME VALUES LP val RP STOP
                                     {
                                         string tb_name (strtok ($3, " "));
                                         Table t = main_db.getTableFromName (tb_name);
-                                        vector<FieldType> ft = t.getFieldTypes ();
-                                        vector<string> fn = t.getFieldNames ();
-                                        Row r;
-                                        for (int i = 0; i < ft.size (); i++)
+                                        if (t.isGood ())
                                         {
-                                            switch (ft[i])
+                                            vector<FieldType> ft = t.getFieldTypes ();
+                                            vector<string> fn = t.getFieldNames ();
+                                            Row r;
+                                            for (int i = 0; i < ft.size (); i++)
                                             {
-                                                case INT_VAL:
-                                                  {
-                                                    Field f (INT_VAL, atoi (tmp[i].c_str ()));
-                                                    r.addField (f, fn[i]);
-                                                    break;
-                                                  }
-                                                case DOUBLE_VAL:
-                                                  {
-                                                    const char* tmp_ch_const = tmp[i].c_str ();
-                                                    Field f (DOUBLE_VAL, atof (tmp_ch_const));
-                                                    r.addField (f, fn[i]);
-                                                    break;
-                                                  }
-                                                case CHAR_ARR:
-                                                  {
-                                                    char tmp_ch[MAX_CHAR_SIZE];
-                                                    strcpy (tmp_ch, tmp[i].c_str ());
-                                                    Field f (CHAR_ARR, tmp_ch);
-                                                    r.addField (f, fn[i]);
-                                                    break;
-                                                  }
+                                                switch (ft[i])
+                                                {
+                                                    case INT_VAL:
+                                                      {
+                                                        Field f (INT_VAL, atoi (tmp[i].c_str ()));
+                                                        r.addField (f, fn[i]);
+                                                        break;
+                                                      }
+                                                    case DOUBLE_VAL:
+                                                      {
+                                                        const char* tmp_ch_const = tmp[i].c_str ();
+                                                        Field f (DOUBLE_VAL, atof (tmp_ch_const));
+                                                        r.addField (f, fn[i]);
+                                                        break;
+                                                    }
+                                                    case CHAR_ARR:
+                                                      {
+                                                        char tmp_ch[MAX_CHAR_SIZE];
+                                                        strcpy (tmp_ch, tmp[i].c_str ());
+                                                        Field f (CHAR_ARR, tmp_ch);
+                                                        r.addField (f, fn[i]);
+                                                        break;
+                                                      }
+                                                }
                                             }
+                                            ofstream op (t.getTableName ().c_str (), ios::app | ios::binary);
+                                            r.write (op);
+                                            op.close ();
+                                            cout << "Row Inserted.\n";
+                                            tmp.clear ();
                                         }
-                                        ofstream op (t.getTableName ().c_str (), ios::app | ios::binary);
-                                        r.write (op);
-                                        op.close ();
-                                        cout << "Row is:- " << r;
-                                        cout << "Row Inserted.\n";
-                                        tmp.clear ();
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
                                     }
 
 val: val COMMA val
-| NUM  			{
+| NUM           {
                     stringstream ss;
                     ss << $1;
                     tmp.push_back (ss.str ());
                 }
-| DOUBLE		{
+| DOUBLE        {
                     stringstream ss;
                     ss << $1;
                     tmp.push_back (ss.str ());
                 }
-| NAME  		{
+| NAME          {
                     stringstream ss;
                     ss << $1;
                     tmp.push_back (ss.str ());
                 }
 
-upd_query1: UPDATE NAME SET NAME COMPARISION diff_types {cout<< $4 <<endl;}
+upd_query1: UPDATE NAME SET NAME COMPARISION diff_types STOP
+                                    {
+                                        cout << $4 << endl;
+                                    }
 
-upd_query2: UPDATE NAME SET NAME COMPARISION diff_types WHERE NAME COMPARISION diff_types {cout<< $4 <<"\n"<<$7<<endl;}
+upd_query2: UPDATE NAME SET NAME COMPARISION diff_types WHERE NAME COMPARISION diff_types STOP 
+                                    {
+                                        cout << $4 << "\n" << $7 << endl;
+                                    }
 
-deletion: DELETE FROM NAME WHERE NAME COMPARISION diff_types {cout<< $3 <<endl;}
+deletion1: DELETE FROM NAME WHERE NAME COMPARISION diff_types STOP 
+                                    {
+                                        cout << $3 << endl;
+                                    }
 
-diff_types: NUM {cout<< $1 <<endl;}
-| DOUBLE {cout<< $1 <<endl;}
-| NAME {cout<< $1 <<endl;}
+deletion2: DELETE FROM NAME STOP    {
+                                        char* tmp_name = strtok ($3, " ");
+                                        tmp_name = strtok (tmp_name, "\n");
+                                        tmp_name = strtok (tmp_name, ";");
+                                        cout << tmp_name << endl;
+                                    }
+
+diff_types: NUM {
+                    stringstream ss;
+                    ss << $1;
+                    tmp.push_back (ss.str ());
+                }
+| DOUBLE    {
+                stringstream ss;
+                ss << $1;
+                tmp.push_back (ss.str ());
+            }
+| NAME      {
+                stringstream ss;
+                ss << $1;
+                tmp.push_back (ss.str ());
+            }
 
 %%
 //-- FUNCTION DEFINITIONS ---------------------------------

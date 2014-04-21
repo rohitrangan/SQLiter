@@ -29,37 +29,37 @@ delete [d|D][e|E][l|L][e|E][t|T][e|E]
 quit [q|Q][u|U][i|I][t|T]
 %%
 
-{sel}							 {return SELECT;}
-{use}							 {return USE;}
-{create}						 {return CREATE;}
-{dat}							 {return DATABASE;}
-{tab}							 {return TABLE;}	
-{show}							 {return SHOW;}
-{dat}[s|S]						 {return DATABASES;}
-{tab}[s|S]						 {return TABLES;}
-{from}							 {return FROM;}
-{star}							 {return STAR;}
-{where}							 {return WHERE;}
-{drop}							 {return DROP;}
-";"      						 {return STOP; }
-","								 {return COMMA;}
-{insert}						 {return INSERT;}
-{into}							 {return INTO;}
-{values}						 {return VALUES;}
-{update}						 {return UPDATE;}
-{set}							 {return SET;}
+{sel}                            {return SELECT;}
+{use}                            {return USE;}
+{create}                         {return CREATE;}
+{dat}                            {return DATABASE;}
+{tab}                            {return TABLE;}    
+{show}                           {return SHOW;}
+{dat}[s|S]                       {return DATABASES;}
+{tab}[s|S]                       {return TABLES;}
+{from}                           {return FROM;}
+{star}                           {return STAR;}
+{where}                          {return WHERE;}
+{drop}                           {return DROP;}
+";"                              {return STOP; }
+","                              {return COMMA;}
+{insert}                         {return INSERT;}
+{into}                           {return INTO;}
+{values}                         {return VALUES;}
+{update}                         {return UPDATE;}
+{set}                            {return SET;}
 {delete}                         {return DELETE;}
 {quit}                           {return QUIT;}
-[0-9]+  						 { yylval.int_val = atoi(yytext); return NUM;}
-{integer}						 {yylval.a_val=yytext;return INTEGER;}
+[0-9]+                           { yylval.int_val = atoi(yytext); return NUM;}
+{integer}                        {yylval.a_val=yytext;return INTEGER;}
 {decimal}                        {yylval.a_val=yytext;return DECIMAL;}
-{character}						 {yylval.a_val=yytext;return CHARACTER;}
-{comp}							 {yylval.a_val=yytext;return COMPARISION;}
-[a-zA-Z0-9_]+   				 {yylval.a_val=yytext;return NAME;}
-"("      						 { yylval.a_val=yytext;return LP; }
-")"      						 { yylval.a_val=yytext;return RP; }
-[ \t\n]+ 						 { }
+{character}                      {yylval.a_val=yytext;return CHARACTER;}
+{comp}                           {yylval.a_val=yytext;return COMPARISION;}
+[a-zA-Z0-9_]+                    {yylval.a_val=yytext;return NAME;}
+"("                              { yylval.a_val=yytext;return LP; }
+")"                              { yylval.a_val=yytext;return RP; }
+[ \t\n]+                         { }
 {digit}*"."{digit}+              { yylval.fl_val=atof(yytext); return DOUBLE;}
-.        						 { cerr << "Unrecognized token!" << endl; exit(1); }
+.                                { cerr << "Unrecognized token!" << endl; exit(1); }
 %%
 

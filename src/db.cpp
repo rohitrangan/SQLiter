@@ -65,7 +65,19 @@ bool Database::createDatabase ()
     if (!rval)
         return rval;
 
-    return fileio::mkdir (name);
+    if (!fileio::mkdir (name))
+        return false;
+
+    if (!fileio::chdir (name))
+        return false;
+
+    ofstream op ("._is_database", ios::out);
+    op.close ();
+
+    if (!fileio::chdir (MASTER_WD))
+        return false;
+
+    return true;
 }
 
 bool Database::loadTables ()
@@ -96,6 +108,18 @@ bool Database::loadTables ()
     return true;
 }
 
+bool Database::isDatabase (string fname)
+{
+    string currwd = fileio::getwd ();
+    fileio::chdir (MASTER_WD);
+    fileio::chdir (fname);
+    string to_check ("._is_database");
+    if (fileio::fileExists (to_check))
+        return true;
+    else
+        return false;
+}
+
 Table Database::getTableFromName (string t_name)
 {
     for (int i = 0; i < tables.size (); i++)
@@ -104,6 +128,11 @@ Table Database::getTableFromName (string t_name)
             return tables[i];
     }
     return Table ();
+}
+
+vector<Table> Database::getAllTables ()
+{
+    return tables;
 }
 
 string Database::getDatabaseName ()
@@ -120,7 +149,17 @@ void Database::addTable (Table t)
     tables.push_back (t);
 }
 
-bool Database::useDatabase (Database db)
+bool Database::tableExists (string table_name)
+{
+    for (int i = 0; i < tables.size (); i++)
+    {
+        if (tables[i].getTableName () == table_name)
+            return true;
+    }
+    return false;
+}
+
+bool Database::useDatabase (Database& db)
 {
     string db_name = db.getDatabaseName ();
     bool rval = fileio::chdir (MASTER_WD);
@@ -134,7 +173,7 @@ bool Database::useDatabase (Database db)
     return db.loadTables ();
 }
 
-bool Database::deleteDatabase (Database db)
+bool Database::deleteDatabase (Database& db)
 {
     bool rval = fileio::chdir (MASTER_WD);
     if (!rval)
@@ -143,9 +182,13 @@ bool Database::deleteDatabase (Database db)
     return fileio::rmdir (db.getDatabaseName ());
 }
 
-void Database::showTables (Database db)
+void Database::showTables (Database& db)
 {
-    string db_name = db.getDatabaseName ();
+    vector<Table> all_t = db.getAllTables ();
+    cout << "Database " << db.getDatabaseName () << "\n\n";
+    for (int i = 0; i < all_t.size (); i++)
+        cout << all_t[i].getTableName () << "\n";
+    /*string db_name = db.getDatabaseName ();
     string cwdir = fileio::getwd ();
     fileio::chdir (MASTER_WD);
     fileio::chdir (db_name);
@@ -172,11 +215,12 @@ void Database::showTables (Database db)
     {
         fileio::chdir (cwdir);
         return;
-    }
+    }*/
 }
 
-void Database::showDatabases ()
+void Database::showDatabases (Database& db)
 {
+    cout << "Databases\n\n";
     string cwdir = fileio::getwd ();
     fileio::chdir (MASTER_WD);
     DIR* dir;
@@ -191,7 +235,8 @@ void Database::showDatabases ()
             size_t place = fname.find (".");
             if (place != string::npos)
                 continue;
-            cout << fname << endl;
+            if (db.isDatabase (fname))
+                cout << fname << endl;
         }
         closedir (dir);
         fileio::chdir (cwdir);
@@ -203,16 +248,21 @@ void Database::showDatabases ()
     }
 }
 
-vector<Row> Database::selectFromTable (Database db, char* table_name,
-                                       char* col_name, char* oper, char* val)
+vector<Row> Database::selectFromTable (Database& db, char* table_name,
+                                       char* col_name, const char* oper,
+                                       const char* val)
 {
     Table t = db.getTableFromName (string (table_name));
     vector<Row> select_reply;
     Row r1 = t.getNextRow ();
-    string oper_s (oper);
+    string oper_s;
+    if (oper)
+        oper_s = oper;
     while (r1.isGood ())
     {
-        Field f = r1.getFieldByName (string (col_name));
+        Field f;
+        if (col_name)
+            f = r1.getFieldByName (string (col_name));
         if (oper_s == "<")
         {
             switch (f.getFieldType ())
@@ -375,9 +425,480 @@ vector<Row> Database::selectFromTable (Database db, char* table_name,
                   }
             }
         }
+        else if (oper == NULL)
+        {
+            select_reply.push_back (r1);
+        }
         r1 = t.getNextRow ();
     }
     return select_reply;
+}
+
+void Database::printSelectResult (Database& db, char* table_name,
+                                  vector<Row> res)
+{
+    Table t = db.getTableFromName (string(table_name));
+    vector<string> col_name = t.getFieldNames ();
+    for (int i = 0; i < col_name.size (); i++)
+        cout << col_name[i] << "\t";
+    cout << "\n\n";
+
+    for (int i = 0; i < res.size (); i++)
+        cout << res[i];
+}
+
+void Database::updateTable (Database& db, char* table_name, char* col_name1,
+                            char* val1, char* col_name2, char* oper,
+                            char* val2)
+{
+    Table t = db.getTableFromName (string (table_name));
+    Row r1 = t.getNextRow ();
+    string oper_s;
+    if (oper)
+        oper_s = oper;
+    while (r1.isGood ())
+    {
+        Field f, f1;
+        if (col_name2)
+            f = r1.getFieldByName (string (col_name2));
+        if (oper_s == "<")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () < tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () < tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c < string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "<=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () <= tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () <= tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c <= string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "==")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () == tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () == tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c == string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () > tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () > tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c > string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () >= tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () >= tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c >= string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "!=" || oper_s == "<>")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val2);
+                    if (f.getIntFieldVal () != tmp_val)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val2);
+                    if (f.getDoubleFieldVal () != tmp_d)
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val2);
+                    if (tmp_c != string (f.getCharFieldVal ()))
+                    {
+                        f1 = r1.getFieldByName (string (col_name1));
+                        switch (f1.getFieldType ())
+                        {
+                            case INT_VAL:
+                                f1.setIntFieldVal (atoi (val1));
+                                break;
+                            case DOUBLE_VAL:
+                                f1.setDoubleFieldVal (atof (val1));
+                                break;
+                            case CHAR_ARR:
+                                f1.setCharFieldVal (val1);
+                                break;
+                        }
+                    }
+                    break;
+                  }
+            }
+        }
+        else if (oper == NULL)
+        {
+            f1 = r1.getFieldByName (string (col_name1));
+            switch (f1.getFieldType ())
+            {
+                case INT_VAL:
+                    f1.setIntFieldVal (atoi (val1));
+                    break;
+                case DOUBLE_VAL:
+                    f1.setDoubleFieldVal (atof (val1));
+                    break;
+                case CHAR_ARR:
+                    f1.setCharFieldVal (val1);
+                    break;
+            }
+        }
+        ofstream op (t.getTableName ().c_str (), ios::app | ios::binary);
+        int curr_pos = t.getCurrentPosition ();
+        int seek_size = t.getSeekSize ();
+        op.seekp ((curr_pos - seek_size));
+        r1.write (op);
+        op.close ();
+        r1 = t.getNextRow ();
+    }
 }
 
 /* Row class definitions.
@@ -398,7 +919,8 @@ Field Row::getFieldByName (string f_name)
         if (field_names[i] == f_name)
             return field_val[i];
     }
-    return Field ();
+    Field tmp;
+    return tmp;
 }
 
 void Row::addField (Field f, string f_name)
@@ -516,6 +1038,21 @@ char* Field::getCharFieldVal ()
     return field_char;
 }
 
+void Field::setIntFieldVal (int field_val)
+{
+    field_int = field_val;
+}
+
+void Field::setDoubleFieldVal (double field_val)
+{
+    field_double = field_val;
+}
+
+void Field::setCharFieldVal (char* field_val)
+{
+    strcpy (field_char, field_val);
+}
+
 /* Table class definitions.
  */
 bool Table::checkAttrFilePresent ()
@@ -607,6 +1144,10 @@ Table::Table (string t_name, string dbname, vector<string>& f_names,
         writeTableToAttrFile ();
 }
 
+Table::~Table ()
+{
+}
+
 string Table::getTableName ()
 {
     return name;
@@ -675,6 +1216,16 @@ Row Table::getNextRow ()
     in_t.close ();
     curr_pos += seek_size;
     return r;
+}
+
+int Table::getCurrentPosition ()
+{
+    return curr_pos;
+}
+
+int Table::getSeekSize ()
+{
+    return seek_size;
 }
 
 bool Table::isGood ()
