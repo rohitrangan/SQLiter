@@ -89,7 +89,7 @@ exp: USE NAME STOP              {
                                     char* tmp_name = strtok ($3, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
-                                    Table::deleteTable (string (tmp_name));
+                                    Database::deleteTable (main_db, string (tmp_name));
                                     cout << "Table Deleted.\n";
                                 }
 | create_query
@@ -99,7 +99,7 @@ exp: USE NAME STOP              {
 | deletion1
 | deletion2
 
-sel_query1: SELECT STAR FROM NAME STOP 
+sel_query1: SELECT STAR FROM NAME STOP
                                     {
                                         char* tmp_name = strtok ($4, " ");
                                         tmp_name = strtok (tmp_name, "\n");
@@ -118,7 +118,6 @@ sel_query1: SELECT STAR FROM NAME STOP
 sel_query2: SELECT STAR FROM NAME WHERE NAME comp diff_types STOP
                                     {
                                         char* tb_name = strtok ($4, " ");
-                                        cout << "Someval = " << tmp[0] << endl;
                                         char* col_name = strtok ($6, tmp[0].c_str ());
                                         col_name = strtok (col_name, " ");
                                         if (main_db.tableExists (string (tb_name)))
@@ -244,9 +243,8 @@ insertion: INSERT INTO NAME VALUES LP val RP STOP
                                                       }
                                                 }
                                             }
-                                            ofstream op (t.getTableName ().c_str (), ios::app | ios::binary);
-                                            r.write (op);
-                                            op.close ();
+                                            t.write (tb_name, r);
+                                            main_db.modifyTable (t, tb_name);
                                             cout << "Row Inserted.\n";
                                             tmp.clear ();
                                         }
@@ -273,26 +271,79 @@ val: val COMMA val
                     tmp.push_back (ss.str ());
                 }
 
-upd_query1: UPDATE NAME SET NAME COMPARISION diff_types STOP
+upd_query1: UPDATE NAME SET NAME comp diff_types STOP
                                     {
-                                        cout << $4 << endl;
+                                        char* tb_name = strtok ($2, " ");
+                                        char* col_name = strtok ($4, tmp[0].c_str ());
+                                        col_name = strtok (col_name, " ");
+                                        if (main_db.tableExists (string (tb_name)))
+                                        {
+                                            Database::updateTable (main_db, tb_name, col_name, tmp[1].c_str (), NULL, NULL, NULL);
+                                            cout << "Table Updated.\n";
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
+                                        tmp.clear ();
                                     }
 
-upd_query2: UPDATE NAME SET NAME COMPARISION diff_types WHERE NAME COMPARISION diff_types STOP 
+upd_query2: UPDATE NAME SET NAME comp diff_types WHERE NAME comp diff_types STOP 
                                     {
-                                        cout << $4 << "\n" << $7 << endl;
+                                        char* tb_name = strtok ($2, " ");
+                                        char* col_name1 = strtok ($4, tmp[0].c_str ());
+                                        col_name1 = strtok (col_name1, " ");
+                                        char* col_name2 = strtok ($8, tmp[2].c_str ());
+                                        col_name2 = strtok (col_name2, " ");
+                                        if (main_db.tableExists (string (tb_name)))
+                                        {
+                                            Database::updateTable (main_db, tb_name, col_name1, tmp[1].c_str (), col_name2, tmp[2].c_str (), tmp[3].c_str ());
+                                            cout << "Table Updated.\n";
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
+                                        tmp.clear ();
+                                    }
+| UPDATE NAME SET NAME comp diff_types WHERE LP NAME comp diff_types RP STOP
+                                    {
+                                        char* tb_name = strtok ($2, " ");
+                                        char* col_name1 = strtok ($4, tmp[0].c_str ());
+                                        col_name1 = strtok (col_name1, " ");
+                                        char* col_name2 = strtok ($9, tmp[2].c_str ());
+                                        col_name2 = strtok (col_name2, " ");
+                                        if (main_db.tableExists (string (tb_name)))
+                                        {
+                                            Database::updateTable (main_db, tb_name, col_name1, tmp[1].c_str (), col_name2, tmp[2].c_str (), tmp[3].c_str ());
+                                            cout << "Table Updated.\n";
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
+                                        tmp.clear ();
                                     }
 
-deletion1: DELETE FROM NAME WHERE NAME COMPARISION diff_types STOP 
+deletion1: DELETE FROM NAME WHERE NAME comp diff_types STOP 
                                     {
                                         cout << $3 << endl;
+                                        tmp.clear ();
                                     }
 
 deletion2: DELETE FROM NAME STOP    {
                                         char* tmp_name = strtok ($3, " ");
                                         tmp_name = strtok (tmp_name, "\n");
                                         tmp_name = strtok (tmp_name, ";");
-                                        cout << tmp_name << endl;
+                                        if (main_db.tableExists (string (tmp_name)))
+                                        {
+                                            Database::deleteFromTable (main_db, tmp_name, NULL, NULL, NULL);
+                                            cout << "Records Deleted Successfully.\n";
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
                                     }
 
 diff_types: NUM {

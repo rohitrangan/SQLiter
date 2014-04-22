@@ -18,7 +18,10 @@ bool Database::loadTableFromAttrFile (string fname)
     string t_name, db_name;
     string tmp;
     int f_len;
+    int d_len;
     int tmp_t;
+    bool tmp_b;
+    vector<bool> is_del;
     vector<string> f_names;
     vector<FieldType> f_types;
     ip >> t_name;
@@ -45,7 +48,14 @@ bool Database::loadTableFromAttrFile (string fname)
                 break;
         }
     }
+    ip >> d_len;
+    for (int i = 0; i < d_len; i++)
+    {
+        ip >> tmp_b;
+        is_del.push_back (tmp_b);
+    }
     Table t (t_name, db_name, f_names, f_types);
+    t.setDeletedField (is_del);
     tables.push_back (t);
     return true;
 }
@@ -149,6 +159,22 @@ void Database::addTable (Table t)
     tables.push_back (t);
 }
 
+bool Database::removeTable (string table_name)
+{
+    int i;
+    for (i = 0; i < tables.size (); i++)
+    {
+        if (tables[i].getTableName () == table_name)
+        {
+            break;
+        }
+    }
+    if (i > tables.size ())
+        return false;
+    tables.erase (tables.begin () + i);
+    return true;
+}
+
 bool Database::tableExists (string table_name)
 {
     for (int i = 0; i < tables.size (); i++)
@@ -157,6 +183,18 @@ bool Database::tableExists (string table_name)
             return true;
     }
     return false;
+}
+
+void Database::modifyTable (Table t, string table_name)
+{
+    for (int i = 0; i < tables.size (); i++)
+    {
+        if (tables[i].getTableName () == table_name)
+        {
+            tables[i] = t;
+            return;
+        }
+    }
 }
 
 bool Database::useDatabase (Database& db)
@@ -180,6 +218,17 @@ bool Database::deleteDatabase (Database& db)
         return false;
 
     return fileio::rmdir (db.getDatabaseName ());
+}
+
+bool Database::deleteTable (Database& db, string table_name)
+{
+    if (!fileio::rmfile (table_name))
+        return false;
+
+    if (!fileio::rmfile (table_name + ".attr"))
+        return false;
+
+    return db.removeTable (table_name);
 }
 
 void Database::showTables (Database& db)
@@ -429,6 +478,10 @@ vector<Row> Database::selectFromTable (Database& db, char* table_name,
         {
             select_reply.push_back (r1);
         }
+        else
+        {
+            cout << "ERROR! Invalid Query.\n";
+        }
         r1 = t.getNextRow ();
     }
     return select_reply;
@@ -448,8 +501,8 @@ void Database::printSelectResult (Database& db, char* table_name,
 }
 
 void Database::updateTable (Database& db, char* table_name, char* col_name1,
-                            char* val1, char* col_name2, char* oper,
-                            char* val2)
+                            const char* val1, char* col_name2,
+                            const char* oper, const char* val2)
 {
     Table t = db.getTableFromName (string (table_name));
     Row r1 = t.getNextRow ();
@@ -484,6 +537,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -505,6 +560,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -526,6 +583,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -553,6 +612,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -574,6 +635,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -595,6 +658,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -622,6 +687,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -643,6 +710,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -664,6 +733,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -691,6 +762,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -712,6 +785,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -733,6 +808,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -760,6 +837,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -781,6 +860,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -802,6 +883,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -829,6 +912,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case DOUBLE_VAL:
@@ -850,6 +935,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
                 case CHAR_ARR:
@@ -871,6 +958,8 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                                 break;
                         }
                     }
+                    else
+                        f1 = r1.getFieldByName (string (col_name1));
                     break;
                   }
             }
@@ -891,7 +980,14 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
                     break;
             }
         }
-        ofstream op (t.getTableName ().c_str (), ios::app | ios::binary);
+        else
+        {
+            cout << "ERROR! Invalid Query.\n";
+            return;
+        }
+        r1.replaceField (f1, string (col_name1));
+        ofstream op (t.getTableName ().c_str (), ios::out | ios::in |
+                                                 ios::binary);
         int curr_pos = t.getCurrentPosition ();
         int seek_size = t.getSeekSize ();
         op.seekp ((curr_pos - seek_size));
@@ -899,6 +995,202 @@ void Database::updateTable (Database& db, char* table_name, char* col_name1,
         op.close ();
         r1 = t.getNextRow ();
     }
+}
+
+void Database::deleteFromTable (Database& db, char* table_name,
+                                char* col_name, const char* oper,
+                                const char* val)
+{
+    Table t = db.getTableFromName (string (table_name));
+    vector<bool> to_ch = t.getDeletedField ();
+    if (col_name == NULL)
+    {
+        for (int i = 0; i < to_ch.size (); i++)
+            to_ch[i] = true;
+        t.setDeletedField (to_ch);
+        db.modifyTable (t, string (table_name));
+        return;
+    }
+    Row r1 = t.getNextRow ();
+    string oper_s;
+    if (oper)
+        oper_s = oper;
+    while (r1.isGood ())
+    {
+        int i_tmp = t.getCurrRecordNum ();
+        Field f;
+        if (col_name)
+            f = r1.getFieldByName (string (col_name));
+        if (oper_s == "<")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () < tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () < tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c < string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "<=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () <= tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () <= tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c <= string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "==")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () == tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () == tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c == string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () > tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () > tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c > string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == ">=")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () >= tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () >= tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c >= string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else if (oper_s == "!=" || oper_s == "<>")
+        {
+            switch (f.getFieldType ())
+            {
+                case INT_VAL:
+                  {
+                    int tmp_val = atoi (val);
+                    if (f.getIntFieldVal () != tmp_val)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case DOUBLE_VAL:
+                  {
+                    double tmp_d = atof (val);
+                    if (f.getDoubleFieldVal () != tmp_d)
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+                case CHAR_ARR:
+                  {
+                    string tmp_c (val);
+                    if (tmp_c != string (f.getCharFieldVal ()))
+                        to_ch[i_tmp] = true;
+                    break;
+                  }
+            }
+        }
+        else
+        {
+            cout << "ERROR! Invalid Query.\n";
+        }
+        r1 = t.getNextRow ();
+    }
+    t.setDeletedField (to_ch);
+    db.modifyTable (t, string (table_name));
 }
 
 /* Row class definitions.
@@ -960,6 +1252,18 @@ void Row::write (ostream& out_t)
 bool Row::isGood ()
 {
     return (field_val.size () != 0);
+}
+
+void Row::replaceField (Field f, string f_name)
+{
+    for (int i = 0; i < field_names.size (); i++)
+    {
+        if (field_names[i] == f_name)
+        {
+            field_val[i] = f;
+            return;
+        }
+    }
 }
 
 ostream& operator<< (ostream& out_t, Row& r)
@@ -1048,7 +1352,7 @@ void Field::setDoubleFieldVal (double field_val)
     field_double = field_val;
 }
 
-void Field::setCharFieldVal (char* field_val)
+void Field::setCharFieldVal (const char* field_val)
 {
     strcpy (field_char, field_val);
 }
@@ -1072,6 +1376,9 @@ void Table::writeTableToAttrFile ()
         op << field_names[i] << endl;
     for (int i = 0; i < field_types.size (); i++)
         op << field_types[i] << endl;
+    op << isDeleted.size () << endl;
+    for (int i = 0; i < isDeleted.size (); i++)
+        op << isDeleted[i] << endl;
 }
 
 void Table::setSeekSize ()
@@ -1168,16 +1475,40 @@ vector<string> Table::getFieldNames ()
     return field_names;
 }
 
+vector<bool> Table::getDeletedField ()
+{
+    return isDeleted;
+}
+
+void Table::setDeletedField (vector<bool> del)
+{
+    isDeleted = del;
+    writeTableToAttrFile ();
+}
+
 Row Table::getNextRow ()
 {
     setSeekSize ();
     setFileSize ();
+    int i_tmp = curr_pos / seek_size;
+    while (isDeleted[i_tmp] && i_tmp < isDeleted.size ())
+    {
+        //cout << "i_tmp = " << i_tmp << endl;
+        curr_pos += seek_size;
+        //cout << curr_pos << endl;
+        //cout << isDeleted[i_tmp] << endl;
+        ++i_tmp;
+        //cout << isDeleted[i_tmp] << endl;
+    }
     if (curr_pos >= file_size)
     {
         curr_pos = 0;
+        //cout << i_tmp << endl;
+        //cout << "Am I here??\n";
         Row r;
         return r;
     }
+    //cout << "How did I get here? " << i_tmp << endl;
     ifstream in_t (name.c_str (), ios::in | ios::binary);
     in_t.seekg (curr_pos);
 
@@ -1228,9 +1559,51 @@ int Table::getSeekSize ()
     return seek_size;
 }
 
+int Table::getCurrRecordNum ()
+{
+    return ((curr_pos - seek_size) / seek_size);
+}
+
 bool Table::isGood ()
 {
     return (field_names.size () != 0);
+}
+
+void Table::write (string tb_name, Row r)
+{
+    if (isDeleted.size () == 0)
+    {
+        ofstream out_t (tb_name.c_str (), ios::out | ios::binary);
+        r.write (out_t);
+        isDeleted.push_back (false);
+        out_t.close ();
+        writeTableToAttrFile ();
+        return;
+    }
+    /*for (int i = 0; i < isDeleted.size (); i++)
+    {
+        if (isDeleted[i])
+        {
+            ofstream out_t (tb_name.c_str (), ios::out | ios::app |
+                                              ios::binary);
+            out_t.seekp (i * seek_size);
+            cout << "tellp = " << out_t.tellp () << endl;
+            cout << "i = " << i << endl;
+            r.write (out_t);
+            cout << "Row = " << r << endl;
+            isDeleted[i] = false;
+            out_t.close ();
+            writeTableToAttrFile ();
+            //cout << "In here???????\n";
+            return;
+        }
+    }*/
+    ofstream out_t (tb_name.c_str (), ios::app | ios::binary);
+    r.write (out_t);
+    isDeleted.push_back (false);
+    out_t.close ();
+    writeTableToAttrFile ();
+    //cout << "Or Maybe Here??\n";
 }
 
 Row Table::read (istream& in_t, Table t)
@@ -1270,13 +1643,4 @@ Row Table::read (istream& in_t, Table t)
         }
     }
     return r;
-}
-
-bool Table::deleteTable (string table_name)
-{
-    bool rval = fileio::rmfile (table_name);
-    if (!rval)
-        return rval;
-
-    return fileio::rmfile (table_name + ".attr");
 }

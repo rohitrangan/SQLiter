@@ -31,3 +31,6 @@ Icon
 sqliter
 query_test
 db1/*
+src/lex.yy.c
+src/parser.tab.cpp
+src/parser.tab.hpp
