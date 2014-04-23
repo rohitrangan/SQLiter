@@ -27,6 +27,7 @@ update [u|U][p|P][d|D][a|A][t|T][e|E]
 set [s|S][e|E][t|T]
 delete [d|D][e|E][l|L][e|E][t|T][e|E]
 quit [q|Q][u|U][i|I][t|T]
+space [" "]
 %%
 
 {sel}                            {return SELECT;}
@@ -50,6 +51,7 @@ quit [q|Q][u|U][i|I][t|T]
 {set}                            {return SET;}
 {delete}                         {return DELETE;}
 {quit}                           {return QUIT;}
+{space}                          {return SPACE;}
 [0-9]+                           { yylval.int_val = atoi(yytext); return NUM;}
 {integer}                        {yylval.a_val=yytext;return INTEGER;}
 {decimal}                        {yylval.a_val=yytext;return DECIMAL;}
@@ -58,7 +60,7 @@ quit [q|Q][u|U][i|I][t|T]
 [a-zA-Z0-9_]+                    {yylval.a_val=yytext;return NAME;}
 "("                              { yylval.a_val=yytext;return LP; }
 ")"                              { yylval.a_val=yytext;return RP; }
-[ \t\n]+                         { }
+[\t\n]+                          {}
 {digit}*"."{digit}+              { yylval.fl_val=atof(yytext); return DOUBLE;}
 .                                { cerr << "Unrecognized token!" << endl; exit(1); }
 %%

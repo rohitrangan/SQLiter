@@ -37,20 +37,20 @@ int yyerror(const char *p) { cerr << p<<" Error!" << endl; }
 %token <int_val> NUM 
 %token <fl_val> DOUBLE FLOAT
 %token <a_val> NAME COMPARISION INTEGER CHARACTER DECIMAL
-%token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET QUIT
-%type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types upd_query1 upd_query2 deletion1 deletion2 comp
+%token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET QUIT SPACE
+%type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types upd_query1 upd_query2 deletion1 deletion2 comp spc
 
 //-- GRAMMAR RULES ---------------------------------------
 %%
    /* forces bison to process many stmts */
 run: res
 
-| QUIT { exit (0); }
+| spc QUIT spc STOP { exit (0); }
 
-res: exp { return 0; }    
+res: spc exp { return 0; }    
 
-exp: USE NAME STOP              {
-                                    char* tmp_name = strtok ($2, " ");
+exp: USE fx_spc NAME spc STOP   {
+                                    char* tmp_name = strtok ($3, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
                                     main_db = Database (string (tmp_name));
@@ -59,8 +59,9 @@ exp: USE NAME STOP              {
                                     else
                                         cout << "ERROR! Database Doesn't Exist.\n";
                                 }
-| CREATE DATABASE NAME STOP     {
-                                    char* tmp_name = strtok ($3, " ");
+| CREATE fx_spc DATABASE fx_spc NAME spc STOP
+                                {
+                                    char* tmp_name = strtok ($5, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
                                     main_db = Database (string (tmp_name));
@@ -69,28 +70,38 @@ exp: USE NAME STOP              {
                                     else
                                         cout << "ERROR! Database Exists.\n";
                                 }
-| SHOW TABLES STOP              { 
+| SHOW fx_spc TABLES spc STOP   { 
                                     Database::showTables (main_db);
                                 }
-| SHOW DATABASES STOP           { 
+| SHOW fx_spc DATABASES spc STOP
+                                { 
                                     Database::showDatabases (main_db);
                                 }
 | sel_query1
 | sel_query2
-| DROP DATABASE NAME STOP       {
-                                    char* tmp_name = strtok ($3, " ");
+| DROP fx_spc DATABASE fx_spc NAME spc STOP
+                                {
+                                    char* tmp_name = strtok ($5, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
                                     main_db = Database (string (tmp_name));
-                                    Database::deleteDatabase (main_db);
-                                    cout << "Database Deleted.\n";
+                                    bool rval = Database::deleteDatabase (main_db);
+                                    if (rval)
+                                        cout << "Database Deleted.\n";
+                                    else
+                                        cout << "ERROR! Database Does Not Exist.\n";
+                                    main_db = Database ();
                                 }
-| DROP TABLE NAME STOP          {
-                                    char* tmp_name = strtok ($3, " ");
+| DROP fx_spc TABLE fx_spc NAME spc STOP
+                                {
+                                    char* tmp_name = strtok ($5, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
-                                    Database::deleteTable (main_db, string (tmp_name));
-                                    cout << "Table Deleted.\n";
+                                    bool rval = Database::deleteTable (main_db, string (tmp_name));
+                                    if (rval)
+                                        cout << "Table Deleted.\n";
+                                    else
+                                        cout << "ERROR! Table Does Not Exist.\n";
                                 }
 | create_query
 | insertion
@@ -99,9 +110,9 @@ exp: USE NAME STOP              {
 | deletion1
 | deletion2
 
-sel_query1: SELECT STAR FROM NAME STOP
+sel_query1: SELECT fx_spc STAR fx_spc FROM fx_spc NAME spc STOP
                                     {
-                                        char* tmp_name = strtok ($4, " ");
+                                        char* tmp_name = strtok ($7, " ");
                                         tmp_name = strtok (tmp_name, "\n");
                                         tmp_name = strtok (tmp_name, ";");
                                         if (main_db.tableExists (string (tmp_name)))
@@ -115,10 +126,10 @@ sel_query1: SELECT STAR FROM NAME STOP
                                         }
                                     }
 
-sel_query2: SELECT STAR FROM NAME WHERE NAME comp diff_types STOP
+sel_query2: SELECT fx_spc STAR fx_spc FROM fx_spc NAME fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP
                                     {
-                                        char* tb_name = strtok ($4, " ");
-                                        char* col_name = strtok ($6, tmp[0].c_str ());
+                                        char* tb_name = strtok ($7, " ");
+                                        char* col_name = strtok ($11, tmp[0].c_str ());
                                         col_name = strtok (col_name, " ");
                                         if (main_db.tableExists (string (tb_name)))
                                         {
@@ -132,10 +143,10 @@ sel_query2: SELECT STAR FROM NAME WHERE NAME comp diff_types STOP
                                         tmp.clear ();
                                     }
 
-| SELECT STAR FROM NAME WHERE LP NAME comp diff_types RP STOP
+| SELECT fx_spc STAR fx_spc FROM fx_spc NAME fx_spc WHERE spc LP spc NAME spc comp spc diff_types spc RP spc STOP
                                     {
-                                        char* tb_name = strtok ($4, " ");
-                                        char* col_name = strtok ($7, tmp[0].c_str ());
+                                        char* tb_name = strtok ($7, " ");
+                                        char* col_name = strtok ($13, tmp[0].c_str ());
                                         col_name = strtok (col_name, " ");
                                         if (main_db.tableExists (string (tb_name)))
                                         {
@@ -153,9 +164,9 @@ comp: COMPARISION   {
                         tmp.push_back (string ($1));
                     }
 
-create_query: CREATE TABLE NAME LP var RP STOP
+create_query: CREATE fx_spc TABLE fx_spc NAME spc LP spc var spc RP spc STOP
                                     {
-                                        char* tmp1 = strtok ($3, "(");
+                                        char* tmp1 = strtok ($5, "(");
                                         string tb_name = string (strtok (tmp1, " "));
                                         vector<string> fields;
                                         vector<FieldType> ftype;
@@ -181,8 +192,9 @@ create_query: CREATE TABLE NAME LP var RP STOP
                                         tmp.clear ();
                                     }
 
-var: var COMMA var 
-| NAME INTEGER    {
+var: var spc COMMA spc var
+| NAME fx_spc INTEGER
+                  {
                     char* p1 = strtok ($1, " ");
                     char* p2 = strtok (NULL, " ");
                     tmp.push_back (string (p1));
@@ -190,7 +202,8 @@ var: var COMMA var
                     std::transform (s.begin(), s.end(), s.begin(), ::toupper);
                     tmp.push_back (s);
                   }
-| NAME CHARACTER  {
+| NAME fx_spc CHARACTER
+                  {
                     char* p3 = strtok ($1, " ");
                     char* p4 = strtok (NULL, " ");
                     tmp.push_back (string (p3));
@@ -198,7 +211,8 @@ var: var COMMA var
                     std::transform (s1.begin(), s1.end(), s1.begin(), ::toupper);
                     tmp.push_back (s1);
                   }
-| NAME DECIMAL    {
+| NAME fx_spc DECIMAL
+                  {
                     char* p5 = strtok ($1, " ");
                     char* p6 = strtok (NULL, " ");
                     tmp.push_back (string (p5));
@@ -207,9 +221,9 @@ var: var COMMA var
                     tmp.push_back (s2);
                   }
 
-insertion: INSERT INTO NAME VALUES LP val RP STOP
+insertion: INSERT fx_spc INTO fx_spc NAME fx_spc VALUES spc LP spc val spc RP spc STOP
                                     {
-                                        string tb_name (strtok ($3, " "));
+                                        string tb_name (strtok ($5, " "));
                                         Table t = main_db.getTableFromName (tb_name);
                                         if (t.isGood ())
                                         {
@@ -254,7 +268,7 @@ insertion: INSERT INTO NAME VALUES LP val RP STOP
                                         }
                                     }
 
-val: val COMMA val
+val: val spc COMMA spc val spc
 | NUM           {
                     stringstream ss;
                     ss << $1;
@@ -271,10 +285,10 @@ val: val COMMA val
                     tmp.push_back (ss.str ());
                 }
 
-upd_query1: UPDATE NAME SET NAME comp diff_types STOP
+upd_query1: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types spc STOP
                                     {
-                                        char* tb_name = strtok ($2, " ");
-                                        char* col_name = strtok ($4, tmp[0].c_str ());
+                                        char* tb_name = strtok ($3, " ");
+                                        char* col_name = strtok ($7, tmp[0].c_str ());
                                         col_name = strtok (col_name, " ");
                                         if (main_db.tableExists (string (tb_name)))
                                         {
@@ -288,12 +302,12 @@ upd_query1: UPDATE NAME SET NAME comp diff_types STOP
                                         tmp.clear ();
                                     }
 
-upd_query2: UPDATE NAME SET NAME comp diff_types WHERE NAME comp diff_types STOP 
+upd_query2: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP 
                                     {
-                                        char* tb_name = strtok ($2, " ");
-                                        char* col_name1 = strtok ($4, tmp[0].c_str ());
+                                        char* tb_name = strtok ($3, " ");
+                                        char* col_name1 = strtok ($7, tmp[0].c_str ());
                                         col_name1 = strtok (col_name1, " ");
-                                        char* col_name2 = strtok ($8, tmp[2].c_str ());
+                                        char* col_name2 = strtok ($15, tmp[2].c_str ());
                                         col_name2 = strtok (col_name2, " ");
                                         if (main_db.tableExists (string (tb_name)))
                                         {
@@ -306,12 +320,12 @@ upd_query2: UPDATE NAME SET NAME comp diff_types WHERE NAME comp diff_types STOP
                                         }
                                         tmp.clear ();
                                     }
-| UPDATE NAME SET NAME comp diff_types WHERE LP NAME comp diff_types RP STOP
+| UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx_spc WHERE spc LP spc NAME spc comp spc diff_types spc RP spc STOP
                                     {
-                                        char* tb_name = strtok ($2, " ");
-                                        char* col_name1 = strtok ($4, tmp[0].c_str ());
+                                        char* tb_name = strtok ($3, " ");
+                                        char* col_name1 = strtok ($7, tmp[0].c_str ());
                                         col_name1 = strtok (col_name1, " ");
-                                        char* col_name2 = strtok ($9, tmp[2].c_str ());
+                                        char* col_name2 = strtok ($17, tmp[2].c_str ());
                                         col_name2 = strtok (col_name2, " ");
                                         if (main_db.tableExists (string (tb_name)))
                                         {
@@ -325,14 +339,15 @@ upd_query2: UPDATE NAME SET NAME comp diff_types WHERE NAME comp diff_types STOP
                                         tmp.clear ();
                                     }
 
-deletion1: DELETE FROM NAME WHERE NAME comp diff_types STOP 
+deletion1: DELETE fx_spc FROM fx_spc NAME fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP 
                                     {
-                                        cout << $3 << endl;
+                                        cout << $5 << endl;
                                         tmp.clear ();
                                     }
 
-deletion2: DELETE FROM NAME STOP    {
-                                        char* tmp_name = strtok ($3, " ");
+deletion2: DELETE fx_spc FROM fx_spc NAME spc STOP
+                                    {
+                                        char* tmp_name = strtok ($5, " ");
                                         tmp_name = strtok (tmp_name, "\n");
                                         tmp_name = strtok (tmp_name, ";");
                                         if (main_db.tableExists (string (tmp_name)))
@@ -346,12 +361,14 @@ deletion2: DELETE FROM NAME STOP    {
                                         }
                                     }
 
-diff_types: NUM {
+diff_types: NUM
+                {
                     stringstream ss;
                     ss << $1;
                     tmp.push_back (ss.str ());
                 }
-| DOUBLE    {
+| DOUBLE
+            {
                 stringstream ss;
                 ss << $1;
                 tmp.push_back (ss.str ());
@@ -361,6 +378,12 @@ diff_types: NUM {
                 ss << $1;
                 tmp.push_back (ss.str ());
             }
+
+spc: 
+| SPACE spc
+
+fx_spc: SPACE
+| SPACE fx_spc
 
 %%
 //-- FUNCTION DEFINITIONS ---------------------------------
