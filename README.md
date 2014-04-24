@@ -22,8 +22,23 @@ Basic Queries Accepted
 14. drop table tbl_name;
 15. drop database db_name;
 
-Points to note:
----------------
+Requirements
+------------
+
+1. gcc 4.8 / clang-425.0.28 or greater.
+2. flex 2.5 or greater.
+3. bison 2.3 or greater.
+4. GNU make 3.81 or greater.
+
+Compiling and Executing the Code
+--------------------------------
+
+1. Execute 'make' to compile the code. This will create an executable called
+   'sqliter' in the current directory.
+2. Execute './sqliter' to run the code.
+
+Note
+----
 
 1. Our database commands are case insensitive but our names are not case sensitive.
    For example Insert/INSERT/insert/or any other permutation of small and capital
