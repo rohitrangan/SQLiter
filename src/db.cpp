@@ -1424,10 +1424,8 @@ void Table::setSeekSize ()
 
 void Table::setFileSize ()
 {
-    if (file_size != -1)
-        return;
-
     ifstream ip (name.c_str (), ios::in | ios::binary | ios::ate);
+    //cout << "ip.tellg () = " << ip.tellg () << endl;
     file_size = (int) ip.tellg ();
     ip.close ();
 }
@@ -1502,6 +1500,7 @@ Row Table::getNextRow ()
     }
     if (curr_pos >= file_size)
     {
+        //cout << "curr_pos = " << curr_pos << endl;
         curr_pos = 0;
         //cout << i_tmp << endl;
         //cout << "Am I here??\n";
@@ -1602,6 +1601,7 @@ void Table::write (string tb_name, Row r)
     r.write (out_t);
     isDeleted.push_back (false);
     out_t.close ();
+    setFileSize ();
     writeTableToAttrFile ();
     //cout << "Or Maybe Here??\n";
 }

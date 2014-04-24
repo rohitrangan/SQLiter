@@ -37,7 +37,7 @@ int yyerror(const char *p) { cerr << p<<" Error!" << endl; }
 %token <int_val> NUM 
 %token <fl_val> DOUBLE FLOAT
 %token <a_val> NAME COMPARISION INTEGER CHARACTER DECIMAL
-%token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET QUIT SPACE
+%token <sym> STAR OPA OPM STOP SELECT INSERT DROP DELETE TABLE DATABASE SHOW USE CREATE TABLES DATABASES FROM WHERE COMMA LP RP INTO VALUES UPDATE SET QUIT SPACE TB_NL
 %type <val> res exp sel_query1 sel_query2 create_query var insertion val diff_types upd_query1 upd_query2 deletion1 deletion2 comp spc
 
 //-- GRAMMAR RULES ---------------------------------------
@@ -260,6 +260,7 @@ insertion: INSERT fx_spc INTO fx_spc NAME fx_spc VALUES spc LP spc val spc RP sp
                                             t.write (tb_name, r);
                                             main_db.modifyTable (t, tb_name);
                                             cout << "Row Inserted.\n";
+                                            //cout << "Deleted Size = " << main_db.getTableFromName (tb_name).getDeletedField ().size () << endl;
                                             tmp.clear ();
                                         }
                                         else
@@ -341,7 +342,20 @@ upd_query2: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx
 
 deletion1: DELETE fx_spc FROM fx_spc NAME fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP 
                                     {
-                                        cout << $5 << endl;
+                                        char* tmp_name = strtok ($5, " ");
+                                        tmp_name = strtok (tmp_name, "\n");
+                                        tmp_name = strtok (tmp_name, ";");
+                                        char* col_name = strtok ($9, tmp[0].c_str ());
+                                        col_name = strtok (col_name, " ");
+                                        if (main_db.tableExists (string (tmp_name)))
+                                        {
+                                            Database::deleteFromTable (main_db, tmp_name, col_name, tmp[0].c_str (), tmp[1].c_str ());
+                                            cout << "Records Deleted Successfully.\n";
+                                        }
+                                        else
+                                        {
+                                            cout << "ERROR! Table Not Found.\n";
+                                        }
                                         tmp.clear ();
                                     }
 
@@ -359,6 +373,7 @@ deletion2: DELETE fx_spc FROM fx_spc NAME spc STOP
                                         {
                                             cout << "ERROR! Table Not Found.\n";
                                         }
+                                        tmp.clear ();
                                     }
 
 diff_types: NUM
@@ -381,9 +396,12 @@ diff_types: NUM
 
 spc: 
 | SPACE spc
+| TB_NL spc
 
 fx_spc: SPACE
 | SPACE fx_spc
+| TB_NL
+| TB_NL fx_spc
 
 %%
 //-- FUNCTION DEFINITIONS ---------------------------------

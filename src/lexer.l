@@ -60,7 +60,7 @@ space [" "]
 [a-zA-Z0-9_]+                    {yylval.a_val=yytext;return NAME;}
 "("                              { yylval.a_val=yytext;return LP; }
 ")"                              { yylval.a_val=yytext;return RP; }
-[\t\n]+                          {}
+[\t\n]+                          {return TB_NL;}
 {digit}*"."{digit}+              { yylval.fl_val=atof(yytext); return DOUBLE;}
 .                                { cerr << "Unrecognized token!" << endl; exit(1); }
 %%
