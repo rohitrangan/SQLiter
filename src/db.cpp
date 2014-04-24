@@ -222,8 +222,7 @@ bool Database::deleteDatabase (Database& db)
 
 bool Database::deleteTable (Database& db, string table_name)
 {
-    if (!fileio::rmfile (table_name))
-        return false;
+    fileio::rmfile (table_name);
 
     if (!fileio::rmfile (table_name + ".attr"))
         return false;

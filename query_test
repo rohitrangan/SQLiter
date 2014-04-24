@@ -1,0 +1,18 @@
+create database db1;
+CREATE DATABASE db2;
+USE db1;
+create table tb1 (c1 char, c2 char, c3 integer, c4 double, c5 char);
+create table tb2 (cl1 integer, cl2 char);
+insert into tb1 values (AAA, fff, 12, 8.1, sadf);
+insert into tb1 values (BBB,ggg, 13, 9.1, sadf);
+select * from tb1;
+update tb1 set c3 = 15 where c4 == 9.1;
+select * from tb1;
+delete from tb1 where c3 == 12;
+select * from tb1;
+insert into tb1 values (sdffd, asdf, 44, 10.1, skdkda);
+select * from tb1;
+show databases;
+show tables;
+drop table tb2;
+drop database db2;

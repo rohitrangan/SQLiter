@@ -49,7 +49,7 @@ run: res
 
 res: spc exp { return 0; }    
 
-exp: USE fx_spc NAME spc STOP   {
+exp: USE fx_spc NAME spc STOP  {
                                     char* tmp_name = strtok ($3, " ");
                                     tmp_name = strtok (tmp_name, "\n");
                                     tmp_name = strtok (tmp_name, ";");
@@ -303,7 +303,7 @@ upd_query1: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types sp
                                         tmp.clear ();
                                     }
 
-upd_query2: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP 
+upd_query2: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP
                                     {
                                         char* tb_name = strtok ($3, " ");
                                         char* col_name1 = strtok ($7, tmp[0].c_str ());
@@ -340,7 +340,7 @@ upd_query2: UPDATE fx_spc NAME fx_spc SET fx_spc NAME spc comp spc diff_types fx
                                         tmp.clear ();
                                     }
 
-deletion1: DELETE fx_spc FROM fx_spc NAME fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP 
+deletion1: DELETE fx_spc FROM fx_spc NAME fx_spc WHERE fx_spc NAME spc comp spc diff_types spc STOP
                                     {
                                         char* tmp_name = strtok ($5, " ");
                                         tmp_name = strtok (tmp_name, "\n");

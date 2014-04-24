@@ -29,7 +29,6 @@ Icon
 # The dependency file created by the compiler.
 .depend
 sqliter
-query_test
 db1/*
 src/lex.yy.c
 src/parser.tab.cpp

@@ -16,6 +16,7 @@
 #include <string>
 #include <cstdio>
 #include <vector>
+#include <cstring>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
