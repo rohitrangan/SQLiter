@@ -1,6 +1,5 @@
 /*
     SQLiter - fileio.cpp
-    Author:- Rohit Rangan
 
     This file contains the definitions of basic File and Folder I/O
     operations.

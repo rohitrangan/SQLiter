@@ -1,6 +1,5 @@
 /*
     SQLiter - fileio.h
-    Author:- Rohit Rangan
 
     This file contains the declarations of basic File and Folder I/O
     operations.

@@ -1,6 +1,5 @@
 /*
     SQLiter - wd.h
-    Author:- Rohit Rangan
 
     This file contains the string for the master working directory.
 */

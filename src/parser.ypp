@@ -1,3 +1,9 @@
+/*
+    SQLiter - parser.ypp
+
+    This file contains the grammar for our SQL query parser.
+*/
+
 %{
 #include "../include/wd.h"
 #include "../include/db.h"

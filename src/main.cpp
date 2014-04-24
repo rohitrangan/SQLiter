@@ -1,8 +1,8 @@
 /*
     SQLiter - main.cpp
-    Author:- Rohit Rangan
 
     This class contains the main function.
+    NOTE - This file's main function was replaced with the main in parser.ypp
 */
 
 #include "../include/db.h"

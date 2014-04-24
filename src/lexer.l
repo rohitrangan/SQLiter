@@ -1,3 +1,9 @@
+/*
+    SQLiter - lexer.l
+
+    This file contains the regular expressions for the tokenizer.
+*/
+
 %{
 #include "parser.tab.hpp"
 #include <iostream>

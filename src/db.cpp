@@ -1,6 +1,5 @@
 /*
     SQLiter - db.cpp
-    Author:- Rohit Rangan
 
     This file contains the definitions of the database class.
 */

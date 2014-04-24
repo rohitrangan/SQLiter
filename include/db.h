@@ -1,6 +1,5 @@
 /*
     SQLiter - db.h
-    Author:- Rohit Rangan
 
     This file contains the declarations of the database class.
 */

@@ -1,6 +1,5 @@
 /*
     SQLiter - test_fileio.cpp
-    Author:- Rohit Rangan
 
     This file contains the tests for the fileio functions.
 */
