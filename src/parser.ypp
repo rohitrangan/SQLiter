@@ -42,7 +42,7 @@ int yyerror(const char *p) { cerr << p<<" Error!" << endl; }
 
 //-- GRAMMAR RULES ---------------------------------------
 %%
-   /* forces bison to process many stmts */
+
 run: res
 
 | spc QUIT spc STOP { exit (0); }

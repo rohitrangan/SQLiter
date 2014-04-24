@@ -3,7 +3,8 @@
 #include <iostream>
 using namespace std;
 %}
-
+/* Variable definitions for certain long regular expressions.
+ */
 %option noyywrap
 digit [0-9]
 sel [s|S][e|E][l|L][e|E][c|C][t|T]
@@ -29,7 +30,6 @@ delete [d|D][e|E][l|L][e|E][t|T][e|E]
 quit [q|Q][u|U][i|I][t|T]
 space [" "]
 %%
-
 {sel}                            {return SELECT;}
 {use}                            {return USE;}
 {create}                         {return CREATE;}
